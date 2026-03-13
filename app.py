@@ -1,9 +1,9 @@
 import numpy as np
 from scipy.stats import poisson
 
-def calcolo_combo_pro():
+def calcolo_combo_ultimate():
     print("="*45)
-    print("   AI PREDICTOR v3.0 - COMBO EDITION")
+    print("   AI PREDICTOR v3.5 - COMBO & GOAL/OVER")
     print("="*45)
     
     try:
@@ -14,47 +14,56 @@ def calcolo_combo_pro():
 
         # Calcolo probabilità reali
         p_over25 = (1/o25_q) / ((1/o25_q) + (1/u25_q))
-        p_gg = (1/gg_q) / ((1/gg_q) + (1/ng_q))
+        p_gg_real = (1/gg_q) / ((1/gg_q) + (1/ng_q))
+        
+        # Stima dei gol medi
         media_totale = 1.7 + (p_over25 * 1.6)
-        l_casa = media_totale * (0.55 if p_gg > 0.5 else 0.62)
+        l_casa = media_totale * (0.55 if p_gg_real > 0.5 else 0.62)
         l_ospite = media_totale - l_casa
 
-        # Inizializziamo i contenitori per le Combo
-        prob_1_ov25 = 0
+        # Inizializziamo le probabilità Combo
+        prob_gg_ov25 = 0
+        prob_1x_ov15 = 0
         prob_1x_mg24 = 0
-        prob_x2_mg13casa = 0
         
-        # Ciclo su tutti i risultati possibili (fino a 6 gol per squadra)
+        # Ciclo su tutti i risultati (fino a 6 gol per squadra)
         for c in range(7):
             for o in range(7):
-                p_risultato = poisson.pmf(c, l_casa) * poisson.pmf(o, l_ospite)
+                p_res = poisson.pmf(c, l_casa) * poisson.pmf(o, l_ospite)
                 tot_gol = c + o
                 
-                # 1. COMBO: 1 + Over 2.5
-                if c > o and tot_gol > 2.5:
-                    prob_1_ov25 += p_risultato
+                # 1. COMBO: Goal + Over 2.5
+                if c >= 1 and o >= 1 and tot_gol > 2.5:
+                    prob_gg_ov25 += p_res
                 
-                # 2. COMBO: 1X + Multigol 2-4 Totale
+                # 2. COMBO: 1X + Over 1.5
+                if c >= o and tot_gol > 1.5:
+                    prob_1x_ov15 += p_res
+                
+                # 3. COMBO: 1X + Multigol 2-4
                 if c >= o and 2 <= tot_gol <= 4:
-                    prob_1x_mg24 += p_risultato
+                    prob_1x_mg24 += p_res
 
-                # 3. COMBO: X2 + Multigol 1-3 Casa (Molto usata per coprirsi)
-                if o >= c and 1 <= c <= 3:
-                    prob_x2_mg13casa += p_risultato
-
-        print("\n" + "*"*15 + " COMBO SUGGERITE " + "*"*15)
-        print(f"1 + OVER 2.5:         {prob_1_ov25*100:.1f}%")
+        print("\n" + "*"*15 + " ANALISI COMBO " + "*"*15)
+        print(f"GOAL + OVER 2.5:      {prob_gg_ov25*100:.1f}%")
+        print(f"1X + OVER 1.5:        {prob_1x_ov15*100:.1f}%")
         print(f"1X + MULTIGOL 2-4:    {prob_1x_mg24*100:.1f}%")
-        print(f"X2 + MG CASA 1-3:     {prob_x2_mg13casa*100:.1f}%")
         print("-" * 45)
         
-        # Il tuo Multigol Casa 1-3 classico (per confronto)
+        # Statistiche Multigol Squadra (Il tuo punto di riferimento)
         p_c13 = sum(poisson.pmf(k, l_casa) for k in range(1, 4)) * 100
-        print(f"PROBABILITÀ MG CASA 1-3: {p_c13:.1f}%")
+        p_o24 = sum(poisson.pmf(k, l_ospite) for k in range(2, 5)) * 100
+        print(f"MG CASA 1-3: {p_c13:.1f}% | MG OSPITE 2-4: {p_o24:.1f}%")
         print("*"*45)
+
+        # Suggerimento Strategico
+        if prob_gg_ov25 > 0.40:
+            print("\nSUGGERIMENTO: Partita da 'festa del gol'. Valuta il Goal+Over.")
+        elif prob_1x_ov15 > 0.65:
+            print("\nSUGGERIMENTO: 1X+Over 1.5 molto probabile per una multipla.")
 
     except ValueError:
         print("Errore: Usa il punto per i decimali!")
 
 if __name__ == "__main__":
-    calcolo_combo_pro()
+    calcolo_combo_ultimate()
