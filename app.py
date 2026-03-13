@@ -1,56 +1,60 @@
 import numpy as np
 from scipy.stats import poisson
 
-def analizzatore_tattico_pro():
+def calcolo_combo_pro():
     print("="*45)
-    print("   AI STRATEGIST - MULTIGOL & LOGICA")
+    print("   AI PREDICTOR v3.0 - COMBO EDITION")
     print("="*45)
     
     try:
-        u25 = float(input("Quota Under 2.5: "))
-        o25 = float(input("Quota Over 2.5: "))
-        gg = float(input("Quota Goal: "))
-        ng = float(input("Quota No Goal: "))
+        u25_q = float(input("Quota Under 2.5: "))
+        o25_q = float(input("Quota Over 2.5: "))
+        gg_q = float(input("Quota Goal: "))
+        ng_q = float(input("Quota No Goal: "))
 
-        p_over = (1/o25) / ((1/o25) + (1/u25))
-        p_gg = (1/gg) / ((1/gg) + (1/ng))
-        media_totale = 1.7 + (p_over * 1.6)
+        # Calcolo probabilità reali
+        p_over25 = (1/o25_q) / ((1/o25_q) + (1/u25_q))
+        p_gg = (1/gg_q) / ((1/gg_q) + (1/ng_q))
+        media_totale = 1.7 + (p_over25 * 1.6)
         l_casa = media_totale * (0.55 if p_gg > 0.5 else 0.62)
         l_ospite = media_totale - l_casa
 
-        # --- CALCOLO PROBABILITÀ ---
-        p_c13 = sum(poisson.pmf(k, l_casa) for k in range(1, 4)) * 100
-        p_o24 = sum(poisson.pmf(k, l_ospite) for k in range(2, 5)) * 100
-        p_1 = sum(poisson.pmf(c, l_casa) * poisson.pmf(o, l_ospite) for c in range(8) for o in range(8) if c > o) * 100
-
-        # --- LOGICA DI ANALISI (IL "PERCHÉ") ---
-        analisi = ""
-        if media_totale < 2.2:
-            analisi = "PARTITA BLOCCATA: Le difese prevalgono. Il Multigol Casa 1-3 è molto solido."
-        elif media_totale > 3.0:
-            analisi = "PARTITA APERTA: Alto rischio Over. Il Multigol 2-4 Ospite è interessante se giocano in contropiede."
+        # Inizializziamo i contenitori per le Combo
+        prob_1_ov25 = 0
+        prob_1x_mg24 = 0
+        prob_x2_mg13casa = 0
         
-        if p_1 > 60:
-            analisi += "\nDOMINIO CASA: La squadra di casa ha una pressione offensiva costante."
-        elif p_gg < 45:
-            analisi += "\nMONOLOGO: Una delle due squadre potrebbe non segnare affatto."
+        # Ciclo su tutti i risultati possibili (fino a 6 gol per squadra)
+        for c in range(7):
+            for o in range(7):
+                p_risultato = poisson.pmf(c, l_casa) * poisson.pmf(o, l_ospite)
+                tot_gol = c + o
+                
+                # 1. COMBO: 1 + Over 2.5
+                if c > o and tot_gol > 2.5:
+                    prob_1_ov25 += p_risultato
+                
+                # 2. COMBO: 1X + Multigol 2-4 Totale
+                if c >= o and 2 <= tot_gol <= 4:
+                    prob_1x_mg24 += p_risultato
 
-        # --- OUTPUT ---
-        print("\n" + "*"*12 + " VERDETTO TATTICO " + "*"*12)
-        print(f"Sintesi: {analisi}")
+                # 3. COMBO: X2 + Multigol 1-3 Casa (Molto usata per coprirsi)
+                if o >= c and 1 <= c <= 3:
+                    prob_x2_mg13casa += p_risultato
+
+        print("\n" + "*"*15 + " COMBO SUGGERITE " + "*"*15)
+        print(f"1 + OVER 2.5:         {prob_1_ov25*100:.1f}%")
+        print(f"1X + MULTIGOL 2-4:    {prob_1x_mg24*100:.1f}%")
+        print(f"X2 + MG CASA 1-3:     {prob_x2_mg13casa*100:.1f}%")
         print("-" * 45)
-        print(f"MG CASA 1-3:   {p_c13:.1f}%")
-        print(f"MG OSPITE 2-4: {p_o24:.1f}%")
-        print(f"PROB. VITTORIA CASA (1): {p_1:.1f}%")
         
-        # Risultato più probabile
-        res = [(f"{c}-{o}", poisson.pmf(c, l_casa) * poisson.pmf(o, l_ospite)) for c in range(4) for o in range(4)]
-        res.sort(key=lambda x: x[1], reverse=True)
-        print(f"RISULTATO TOP: {res[0][0]} ({res[0][1]*100:.1f}%)")
+        # Il tuo Multigol Casa 1-3 classico (per confronto)
+        p_c13 = sum(poisson.pmf(k, l_casa) for k in range(1, 4)) * 100
+        print(f"PROBABILITÀ MG CASA 1-3: {p_c13:.1f}%")
         print("*"*45)
 
     except ValueError:
         print("Errore: Usa il punto per i decimali!")
 
 if __name__ == "__main__":
-    analizzatore_tattico_pro()
+    calcolo_combo_pro()
