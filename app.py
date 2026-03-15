@@ -1,72 +1,71 @@
 import numpy as np
 from scipy.stats import poisson
 
-def ai_gold_master_v13():
+def ai_predictor_recovery_pro():
     print("="*60)
-    print("   AI GOLD MASTER v13.0 - LOGICA DI VALIDAZIONE")
+    print("   AI PREDICTOR v14.0 - RECOVERY & MARGIN CLEANER")
     print("="*60)
     
     try:
-        # --- INPUT DATI ---
+        # 1. INPUT CON PULIZIA AGGIO
         q1 = float(input("Quota 1: "))
         qx = float(input("Quota X: "))
         q2 = float(input("Quota 2: "))
         qgg = float(input("Quota Goal: "))
         qng = float(input("Quota No Goal: "))
         
-        print("\n[ MERCATI CASA ]")
-        c_o05_q = float(input("Quota Over 0.5 Casa: "))
+        # Calcolo aggio (margine bookmaker)
+        margin = (1/q1 + 1/qx + 1/q2) - 1
+        # Quote "Pure" senza il guadagno del bookmaker
+        p1_pure = (1/q1) / (1 + margin)
+        px_pure = (1/qx) / (1 + margin)
+        p2_pure = (1/q2) / (1 + margin)
+
+        print("\n[ GOL SQUADRA ]")
         c_o15_q = float(input("Quota Over 1.5 Casa: "))
-        
-        print("\n[ MERCATI OSPITE ]")
-        o_o05_q = float(input("Quota Over 0.5 Ospite: "))
         o_o15_q = float(input("Quota Over 1.5 Ospite: "))
 
-        # --- MOTORE DI CALCOLO ---
-        # 1. Calcolo Medie Gol (Lambda) raffinate
-        l_casa = -np.log(1 - (1/c_o05_q))
-        l_ospite = -np.log(1 - (1/o_o05_q))
+        # 2. CALCOLO LAMBDA RAFFINATO (DIFESA vs ATTACCO)
+        # Usiamo il mercato Goal/No Goal per capire la chiusura delle difese
+        p_gg = (1/qgg) / (1/qgg + 1/qng)
         
-        # 2. Probabilità Reali
-        p_1 = (1/q1) / ((1/q1) + (1/qx) + (1/q2))
-        p_gg = (1/qgg) / ((1/qgg) + (1/qng))
-        
-        # 3. Calcolo Esiti Granulari
-        mg_c13 = sum(poisson.pmf(k, l_casa) for k in range(1, 4)) * 100
-        mg_o24 = sum(poisson.pmf(k, l_ospite) for k in range(2, 5)) * 100
-        
-        # 4. LOGICA DI VALIDAZIONE (Il "Cervello" del software)
-        # Verifichiamo se la quota 1X2 concorda con i gol squadra
-        score = 0
-        if p_1 > 0.5 and l_casa > 1.4: score += 1 # Coerenza favorita/attacco
-        if p_gg > 0.5 and l_ospite > 0.9: score += 1 # Coerenza Goal/attacco ospite
-        if c_o15_q < 1.8 and l_casa > 1.2: score += 1 # Coerenza quota Over/media gol
-        if (1/qng) > 0.4 and l_ospite < 1.0: score += 1 # Coerenza difesa casa
-        
-        stelle = "⭐" * (score + 1)
+        # Stima media gol basata sulla forza relativa (p1, p2) e propensione al goal (p_gg)
+        l_casa = (p1_pure * 2.5) + (p_gg * 0.5)
+        l_ospite = (p2_pure * 2.5) + (p_gg * 0.5)
 
-        # --- OUTPUT ---
-        print("\n" + "!"*15 + " VERDETTO FINALE " + "!"*15)
-        print(f"AFFIDABILITÀ: {stelle}")
-        print("-" * 50)
+        # 3. VERIFICA COERENZA (CRUCIALE!)
+        # Se la quota Over 1.5 è alta (>2.10) ma Lambda è alto, correggiamo al ribasso
+        if c_o15_q > 2.0: l_casa *= 0.85
+        if o_o15_q > 2.0: l_ospite *= 0.85
+
+        # 4. CALCOLO MULTIGOL CON FILTRO PRUDENZA
+        mg_c13 = sum(poisson.pmf(k, l_casa) for k in range(1, 4)) * 100
+        mg_o13 = sum(poisson.pmf(k, l_ospite) for k in range(1, 4)) * 100
         
-        print(f"MG CASA 1-3:    {mg_c13:.1f}%")
-        print(f"MG OSPITE 2-4:  {mg_o24:.1f}%")
+        # COMBO DI SICUREZZA
+        p_1x_mg14 = sum(poisson.pmf(c, l_casa)*poisson.pmf(o, l_ospite) for c in range(5) for o in range(5) if c>=o and 1<=(c+o)<=4) * 100
+
+        # --- OUTPUT PROFESSIONALE ---
+        print("\n" + "!"*15 + " ANALISI POST-LOSS " + "!"*15)
+        print(f"Potenza Attacco: Casa {l_casa:.2f} | Ospite {l_ospite:.2f}")
         
-        # Nuova Combo suggerita basata sulla validazione
-        p_1x_mg24 = sum(poisson.pmf(c, l_casa)*poisson.pmf(o, l_ospite) for c in range(5) for o in range(5) if c>=o and 2<=(c+o)<=4) * 100
-        
-        print(f"\n[ COMBO VALIDATA ]")
-        print(f"1X + MULTIGOL 2-4: {p_1x_mg24:.1f}%")
-        
-        if score >= 3:
-            print("\n🔥 NOTA: I dati sono molto coerenti. Alta probabilità statistica.")
+        # FILTRO SELEZIONE
+        print("\n[ PRONOSTICI AD ALTA SELEZIONE ]")
+        if mg_c13 > 65 and q1 < 2.0:
+            print(f"✅ CONSIGLIATO: Multigol Casa 1-3 ({mg_c13:.1f}%)")
         else:
-            print("\n⚠️  NOTA: Dati discordanti. Possibile trappola del bookmaker.")
+            print("⚠️  RISCHIO ALTO: Multigol Casa non garantito.")
+
+        if p_1x_mg14 > 55:
+            print(f"✅ CONSIGLIATO: 1X + Multigol 1-4 ({p_1x_mg14:.1f}%)")
+            
+        # CALCOLO "VALORE"
+        quota_equa = 100 / mg_c13
+        print(f"\nQuota minima consigliata per MG Casa 1-3: {quota_equa:.2f}")
         print("="*60)
 
     except Exception as e:
         print(f"Errore: {e}")
 
 if __name__ == "__main__":
-    ai_gold_master_v13()
+    ai_predictor_recovery_pro()
